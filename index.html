@@ -371,6 +371,71 @@
             text-align: center;
             min-height: 14px;
         }
+        /* Tombol Hamburger */
+        .hamburger-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #f1f5f9;
+            border: 1.5px solid rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            z-index: 10;
+            margin-top: 0;
+            padding: 0;
+        }
+        .hamburger-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--text-main);
+            stroke-width: 2;
+        }
+
+        /* Dropdown Menu */
+        .dropdown-menu {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            background: white;
+            border: 1.5px solid rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            width: 160px;
+            display: none;
+            flex-direction: column;
+            z-index: 20;
+            overflow: hidden;
+            text-align: left;
+        }
+        .dropdown-menu button {
+            background: transparent;
+            color: var(--text-main);
+            border: none;
+            border-radius: 0;
+            margin: 0;
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dropdown-menu button:hover {
+            background: #f8fafc;
+            color: var(--primary);
+        }
+        
+        /* Pastikan posisi box dashboard relative agar menu dropdown menempel dengan pas */
+        #view-dashboard {
+            position: relative;
+        }
     </style>
 </head>
 <body>
@@ -399,6 +464,23 @@
 </div>
 
 <div id="view-dashboard" class="box" style="display:none;">
+    <!-- Tombol Hamburger di Pojok Kanan Atas -->
+    <button class="hamburger-btn" onclick="toggleMenu(event)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+        </svg>
+    </button>
+
+    <!-- Menu Dropdown -->
+    <div id="dropdown-hamburger" class="dropdown-menu">
+        <button onclick="bukaProfil()">
+            👤 Profil Saya
+        </button>
+    </div>
+    
+    <!-- (Konten dashboard yang sudah ada di bawahnya tetap seperti biasa) -->
     <div class="logo-container">
         <img src="logo.png" class="logo-toko" alt="Logo UFO">
     </div>
@@ -1282,7 +1364,33 @@ function prosesAbsen() {
         tampilkanPesan("Terjadi kesalahan jaringan.", "info");
     });
 }
+// Fungsi untuk memunculkan/menyembunyikan menu dropdown
+function toggleMenu(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('dropdown-hamburger');
+    menu.style.display = (menu.style.display === 'flex') ? 'none' : 'flex';
+}
 
+// Tutup menu jika klik di luar area menu
+window.addEventListener('click', function() {
+    const menu = document.getElementById('dropdown-hamburger');
+    if (menu) menu.style.display = 'none';
+});
+
+// Fungsi untuk menampilkan profil karyawan yang sedang login
+function bukaProfil() {
+    document.getElementById('dropdown-hamburger').style.display = 'none';
+    
+    document.getElementById('modal-title').innerText = 'Profil Karyawan';
+    document.getElementById('modal-pesan').innerHTML = `
+        <div style="text-align: left; font-size: 13px; line-height: 1.6; background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+            <p style="margin: 4px 0;"><strong>Nama:</strong> ${namaLogin}</p>
+            <p style="margin: 4px 0;"><strong>Lokasi Kerja:</strong> UFO Kebonsari Malang</p>
+            <p style="margin: 4px 0;"><strong>Status Akun:</strong> <span style="color: #059669; font-weight: bold;">Aktif / Terverifikasi</span></p>
+        </div>
+    `;
+    document.getElementById('modal-notif').style.display = 'flex';
+}
 function logout() {
     if (gpsWatcher) {
         navigator.geolocation.clearWatch(gpsWatcher);
