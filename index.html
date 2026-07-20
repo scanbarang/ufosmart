@@ -1032,9 +1032,8 @@ function cekValidasiHarian() {
             btnOut.classList.add('btn-disabled');
             btnOut.disabled = true;
         }
-        document.getElementById('status-log').innerText = "Status: Sedang bekerja. Silakan Check Out saat pulang.";
-    } 
-    else {
+       document.getElementById('status-log').innerHTML = "Status : Sedang bekerja<br>Silahkan Checkout saat pulang";
+    }else {
         document.getElementById('btn-off').classList.remove('btn-disabled');
         document.getElementById('btn-off').disabled = false;
         
