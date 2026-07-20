@@ -400,6 +400,9 @@
     <div class="jam-digital" id="live-jam">00:00:00</div>
     <div class="tanggal-digital" id="live-tanggal">Mencari Tanggal...</div>
 
+    <!-- Elemen Periode Karyawan -->
+    <div id="periode-karyawan-text" style="display: none; margin-bottom: 15px; font-size: 13px; color: #1e293b; font-weight: 600; background: #f1f5f9; padding: 10px 14px; border-radius: 8px; border-bottom: 3px solid #2563eb; text-align: center; line-height: 1.5;"></div>
+
    <div class="stat-box" style="padding: 15px; font-size: 14px;">
     <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
         <span>Total Kehadiran Bulan Ini :</span>
@@ -413,7 +416,6 @@
         <span>Total PS Bulan Ini :</span>
         <span id="total-ps" style="color: var(--warning); font-weight: bold; min-width: 60px; text-align: right;">0 hari</span>
     </div>
-    <!-- Posisinya sekarang menyatu di dalam kotak yang sama dan formatnya sejajar -->
     <div style="display: flex; justify-content: space-between;">
         <span>Total Terlambat Bulan Ini :</span>
         <span id="total-terlambat" style="color: #ef4444; font-weight: bold; min-width: 60px; text-align: right;">0 hari</span>
@@ -490,6 +492,39 @@
             </button>
         </div>
     </div>
+
+    <!-- FILTER PER KARYAWAN & STATISTIK ADMIN -->
+    <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #e2e8f0; text-align: left;">
+        <label style="font-weight: bold; display: block; margin-bottom: 6px; font-size: 13px; color: #334155;">
+            🔍 Pilih Nama Karyawan:
+        </label>
+        <select id="filter-nama-admin" onchange="filterLaporanAdmin()" style="width: 100%; max-width: 300px; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; background: white;">
+            <option value="SEMUA">-- Tampilkan Semua Karyawan --</option>
+        </select>
+        
+        <div id="periode-admin-text" style="display: none; margin-top: 12px; font-size: 13px; color: #1e293b; font-weight: 800; background: #e2e8f0; padding: 6px 12px; border-radius: 6px; border-left: 4px solid #2563eb; display: inline-block;">
+            Periode: -
+        </div>
+        
+        <div id="stat-karyawan-admin" style="display: none; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 15px;">
+            <div style="background: white; padding: 12px 10px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <div style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">Hadir</div>
+                <strong id="admin-stat-masuk" style="font-size: 24px; font-weight: 800; color: #059669; display: block;">0</strong>
+            </div>
+            <div style="background: white; padding: 12px 10px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <div style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">Terlambat</div>
+                <strong id="admin-stat-terlambat" style="font-size: 24px; font-weight: 800; color: #ef4444; display: block;">0</strong>
+            </div>
+            <div style="background: white; padding: 12px 10px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <div style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">OFF</div>
+                <strong id="admin-stat-off" style="font-size: 24px; font-weight: 800; color: #dc2626; display: block;">0</strong>
+            </div>
+            <div style="background: white; padding: 12px 10px; border-radius: 8px; border: 1px solid #e2e8f0; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
+                <div style="font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 4px;">PS</div>
+                <strong id="admin-stat-ps" style="font-size: 24px; font-weight: 800; color: #d97706; display: block;">0</strong>
+            </div>
+        </div>
+    </div>
      
     <div class="table-container" style="box-shadow: 0 4px 15px rgba(0,0,0,0.02); background: white; border-radius: 12px;">
         <table>
@@ -528,12 +563,42 @@ const RADIUS_MAKSIMAL = 100;
 
 let streamKamera = null;
 let lat = 0, lng = 0, namaLogin = "", tipeAbsen = "";
-let totalHadir = 0, totalOff = 0, totalPs = 0, totalTerlambat = 0; // Tambahkan totalTerlambat
+let totalHadir = 0, totalOff = 0, totalPs = 0, totalTerlambat = 0;
 let isGpsValid = false;
 let modeKamera = "user";
 let gpsWatcher = null;
 let serverTimeOffset = 0; 
 let dataLaporanGlobal = [];
+
+// Inisialisasi Teks Periode Karyawan
+function initPeriodeKaryawan() {
+    const labelPeriodeKaryawan = document.getElementById('periode-karyawan-text');
+    if (labelPeriodeKaryawan) {
+        labelPeriodeKaryawan.style.display = 'block';
+        let sekarang = new Date();
+        const namaBulanFull = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+        let blnMulai, thnMulai, blnSelesai, thnSelesai;
+        
+        if (sekarang.getDate() >= 26) {
+            blnMulai = namaBulanFull[sekarang.getMonth()];
+            thnMulai = sekarang.getFullYear();
+            let targetBulanDepan = new Date(sekarang.getFullYear(), sekarang.getMonth() + 1, 1);
+            blnSelesai = namaBulanFull[targetBulanDepan.getMonth()];
+            thnSelesai = targetBulanDepan.getFullYear();
+        } else {
+            let targetBulanLalu = new Date(sekarang.getFullYear(), sekarang.getMonth() - 1, 1);
+            blnMulai = namaBulanFull[targetBulanLalu.getMonth()];
+            thnMulai = targetBulanLalu.getFullYear();
+            blnSelesai = namaBulanFull[sekarang.getMonth()];
+            thnSelesai = sekarang.getFullYear();
+        }
+        
+        labelPeriodeKaryawan.innerHTML = `
+            <span style="color: #64748b; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; display: block; margin-bottom: 2px;">📅 Periode Absensi Aktif</span>
+            <strong style="color: #2563eb; font-size: 14px; font-weight: 800; display: block; margin-top: 2px;">26 ${blnMulai} ${thnMulai} - 25 ${blnSelesai} ${thnSelesai}</strong>
+        `;
+    }
+}
 
 function sinkronisasiWaktuServer() {
     fetch(SCRIPT_URL, {
@@ -546,11 +611,10 @@ function sinkronisasiWaktuServer() {
             const serverDate = new Date(data.time.replace(" ", "T") + "+07:00");
             const localDate = new Date();
             serverTimeOffset = serverDate.getTime() - localDate.getTime();
-            console.log("Waktu tersinkronisasi. Selisih: " + serverTimeOffset + " ms");
         }
     })
     .catch(err => {
-        console.log("Gagal sinkronisasi waktu server, menggunakan waktu HP lokal:", err);
+        console.log("Gagal sinkronisasi waktu server:", err);
     });
 }
 
@@ -566,7 +630,7 @@ function updateWaktu() {
     if(elJam) {
         let jam = sekarang.getHours().toString().padStart(2, '0');
         let menit = sekarang.getMinutes().toString().padStart(2, '0');
-        let detik = geometry = sekarang.getSeconds().toString().padStart(2, '0');
+        let detik = sekarang.getSeconds().toString().padStart(2, '0');
         elJam.innerText = `${jam}:${menit}:${detik}`;
     }
 }
@@ -588,7 +652,6 @@ function tampilkanStatistik() {
     document.getElementById('total-off').innerText = totalOff + " hari";
     document.getElementById('total-ps').innerText = totalPs + " hari";
     
-    // Tambahkan baris ini untuk menampilkan data ke HTML
     const elTerlambat = document.getElementById('total-terlambat');
     if (elTerlambat) elTerlambat.innerText = totalTerlambat + " hari";
 }
@@ -610,11 +673,7 @@ function tutupModal() {
 function prosesLogin() {
     const docEl = document.documentElement;
     if (docEl.requestFullscreen) {
-        docEl.requestFullscreen().catch(err => console.log("Izin Fullscreen diabaikan: ", err));
-    } else if (docEl.webkitRequestFullscreen) {
-        docEl.webkitRequestFullscreen();
-    } else if (docEl.msRequestFullscreen) {
-        docEl.msRequestFullscreen();
+        docEl.requestFullscreen().catch(err => console.log("Fullscreen diabaikan: ", err));
     }
 
     const username = document.getElementById('user').value.trim();
@@ -642,23 +701,24 @@ function prosesLogin() {
             if(data.role === "admin") {
                 document.getElementById('view-admin').style.display = 'block';
                 muatDataAdmin();
-         } else {
+            } else {
                 let lokalHadir = localStorage.getItem(`totalHadir_${namaLogin}`);
                 let lokalOff = localStorage.getItem(`totalOff_${namaLogin}`);
                 let lokalPs = localStorage.getItem(`totalPs_${namaLogin}`);
-                let lokalTerlambat = localStorage.getItem(`totalTerlambat_${namaLogin}`); // Ambil dari local storage
+                let lokalTerlambat = localStorage.getItem(`totalTerlambat_${namaLogin}`);
 
                 totalHadir = lokalHadir !== null ? parseInt(lokalHadir) : (data.total_masuk || 0);
                 totalOff = lokalOff !== null ? parseInt(lokalOff) : (data.total_off || 0);
                 totalPs = lokalPs !== null ? parseInt(lokalPs) : (data.total_ps || 0);
-                totalTerlambat = lokalTerlambat !== null ? parseInt(lokalTerlambat) : (data.total_terlambat || 0); // Ambil data dari Apps Script
+                totalTerlambat = lokalTerlambat !== null ? parseInt(lokalTerlambat) : (data.total_terlambat || 0);
 
                 localStorage.setItem(`totalHadir_${namaLogin}`, totalHadir);
                 localStorage.setItem(`totalOff_${namaLogin}`, totalOff);
                 localStorage.setItem(`totalPs_${namaLogin}`, totalPs);
-                localStorage.setItem(`totalTerlambat_${namaLogin}`, totalTerlambat); // Simpan ke local storage
+                localStorage.setItem(`totalTerlambat_${namaLogin}`, totalTerlambat);
                  
                 tampilkanStatistik();
+                initPeriodeKaryawan();
                 document.getElementById('view-dashboard').style.display = 'block';
                 document.getElementById('nama-user').innerText = namaLogin;
                 
@@ -687,21 +747,72 @@ function muatDataAdmin() {
     .then(res => res.json())
     .then(data => {
         dataLaporanGlobal = data; 
-        tabelBody.innerHTML = "";
-            
-        if (data.length <= 1) {
-            tabelBody.innerHTML = "<tr><td colspan='5' style='text-align: center; padding: 30px; color: var(--text-muted);'>Belum ada data absensi masuk.</td></tr>";
-            return;
+        
+        const dropdown = document.getElementById('filter-nama-admin');
+        if(dropdown) {
+            dropdown.innerHTML = '<option value="SEMUA">-- Tampilkan Semua Karyawan --</option>';
+            let daftarNama = [];
+            for(let i = 1; i < data.length; i++) {
+                let nama = data[i][1];
+                if(nama && !daftarNama.includes(nama)) {
+                    daftarNama.push(nama);
+                }
+            }
+            daftarNama.sort().forEach(nama => {
+                dropdown.innerHTML += `<option value="${nama}">${nama}</option>`;
+            });
         }
 
-        for(let i = 1; i < data.length; i++) {
-            let row = data[i];
-            let tr = document.createElement('tr');
-                
-            let statusBadgeClass = 'badge-off';
-            if(row[2] === 'Check In') statusBadgeClass = 'badge-in';
-            if(row[2] === 'Check Out') statusBadgeClass = 'badge-out';
+        renderTabelAdmin("SEMUA");
+    })
+    .catch(err => {
+        tabelBody.innerHTML = "<tr><td colspan='5' style='text-align: center; padding: 30px; color: var(--danger);'>Gagal memuat data. Periksa koneksi internet Anda.</td></tr>";
+        console.error(err);
+    });
+}
 
+function filterLaporanAdmin() {
+    const namaDipilih = document.getElementById('filter-nama-admin').value;
+    renderTabelAdmin(namaDipilih);
+}
+
+function renderTabelAdmin(namaTarget) {
+    const tabelBody = document.getElementById('isi-tabel');
+    if (!tabelBody) return;
+    
+    tabelBody.innerHTML = "";
+    
+    if (!dataLaporanGlobal || dataLaporanGlobal.length <= 1) {
+        tabelBody.innerHTML = "<tr><td colspan='5' style='text-align: center; padding: 30px;'>Belum ada data absensi.</td></tr>";
+        return;
+    }
+
+    let sekarang = new Date();
+    let targetBulan = sekarang.getMonth();
+    let targetTahun = sekarang.getFullYear();
+    
+    if (sekarang.getDate() >= 26) {
+        targetBulan += 1;
+        if (targetBulan > 11) { targetBulan = 0; targetTahun += 1; }
+    }
+
+    let totalMasuk = 0, totalOff = 0, totalPs = 0, totalTerlambatAdmin = 0;
+    let logPerTanggal = {};
+
+    for (let i = 1; i < dataLaporanGlobal.length; i++) {
+        let row = dataLaporanGlobal[i];
+        if (!row || row.length < 3) continue;
+
+        let kolomWaktu = row[0];
+        let kolomNama = row[1];
+        let kolomStatus = row[2];
+
+        if (namaTarget === "SEMUA" || kolomNama === namaTarget) {
+            let tr = document.createElement('tr');
+            let statusBadgeClass = 'badge-off';
+            if (kolomStatus === 'Check In') statusBadgeClass = 'badge-in';
+            if (kolomStatus === 'Check Out') statusBadgeClass = 'badge-out';
+            
             let koordinat = (row[3] && row[4]) ? `${parseFloat(row[3]).toFixed(5)}, ${parseFloat(row[4]).toFixed(5)}` : '-';
 
             tr.innerHTML = `
@@ -715,11 +826,93 @@ function muatDataAdmin() {
             `;
             tabelBody.appendChild(tr);
         }
-    })
-    .catch(err => {
-        tabelBody.innerHTML = "<tr><td colspan='5' style='text-align: center; padding: 30px; color: var(--danger);'>Gagal memuat data. Periksa koneksi internet Anda.</td></tr>";
-        console.error(err);
-    });
+
+        if (namaTarget !== "SEMUA" && kolomNama === namaTarget) {
+            try {
+                if (kolomWaktu && kolomWaktu.includes(" ")) {
+                    let parts = kolomWaktu.split(" ");
+                    let dateParts = parts[0].split("-");
+                    let timeParts = parts[1].split(":");
+                    let tglAbsen = new Date(dateParts[2], dateParts[1] - 1, dateParts[0], timeParts[0], timeParts[1], timeParts[2]);
+                    
+                    let pBulan = tglAbsen.getMonth();
+                    let pTahun = tglAbsen.getFullYear();
+                    
+                    if (tglAbsen.getDate() >= 26) {
+                        pBulan += 1;
+                        if (pBulan > 11) { pBulan = 0; pTahun += 1; }
+                    }
+
+                    if (pBulan === targetBulan && pTahun === targetTahun) {
+                        let stringTanggal = tglAbsen.toDateString();
+                        if (!logPerTanggal[stringTanggal]) {
+                            logPerTanggal[stringTanggal] = { status: [], jamCheckIn: [], menitCheckIn: [], jamCheckOut: [] };
+                        }
+                        logPerTanggal[stringTanggal].status.push(kolomStatus);
+                        if (kolomStatus === "Check In") {
+                            logPerTanggal[stringTanggal].jamCheckIn.push(tglAbsen.getHours());
+                            logPerTanggal[stringTanggal].menitCheckIn.push(tglAbsen.getMinutes());
+                        }
+                        if (kolomStatus === "Check Out") {
+                            logPerTanggal[stringTanggal].jamCheckOut.push(tglAbsen.getHours());
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error("Format tanggal bermasalah", e);
+            }
+        }
+    }
+
+    const boxStat = document.getElementById('stat-karyawan-admin');
+    const labelPeriode = document.getElementById('periode-admin-text');
+
+    if (namaTarget === "SEMUA") {
+        if (boxStat) boxStat.style.display = 'none';
+        if (labelPeriode) labelPeriode.style.display = 'none';
+    } else {
+        if (boxStat) boxStat.style.display = 'grid';
+        if (labelPeriode) {
+            labelPeriode.style.display = 'block';
+            const namaBulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+            let blnMulai, thnMulai, blnSelesai, thnSelesai;
+            
+            if (sekarang.getDate() >= 26) {
+                blnMulai = namaBulan[sekarang.getMonth()];
+                thnMulai = sekarang.getFullYear();
+                let targetBulanDepan = new Date(sekarang.getFullYear(), sekarang.getMonth() + 1, 1);
+                blnSelesai = namaBulan[targetBulanDepan.getMonth()];
+                thnSelesai = targetBulanDepan.getFullYear();
+            } else {
+                let targetBulanLalu = new Date(sekarang.getFullYear(), sekarang.getMonth() - 1, 1);
+                blnMulai = namaBulan[targetBulanLalu.getMonth()];
+                thnMulai = targetBulanLalu.getFullYear();
+                blnSelesai = namaBulan[sekarang.getMonth()];
+                thnSelesai = sekarang.getFullYear();
+            }
+            labelPeriode.innerText = `Periode: 26 ${blnMulai} ${thnMulai} - 25 ${blnSelesai} ${thnSelesai}`;
+        }
+
+        for (let tgl in logPerTanggal) {
+            let hariIni = logPerTanggal[tgl];
+            if (hariIni.status.includes("OFF")) totalOff++;
+            if (hariIni.status.includes("Check In")) {
+                if (hariIni.jamCheckIn[0] > 8 || (hariIni.jamCheckIn[0] === 8 && hariIni.menitCheckIn[0] > 0)) {
+                    totalTerlambatAdmin++;
+                }
+            }
+            if (hariIni.status.includes("Check In") && hariIni.status.includes("Check Out")) {
+                totalMasuk++;
+                let lastOut = hariIni.jamCheckOut[hariIni.jamCheckOut.length - 1];
+                if (lastOut === 17 || lastOut === 18) totalPs++;
+            }
+        }
+        
+        if (document.getElementById('admin-stat-masuk')) document.getElementById('admin-stat-masuk').innerText = totalMasuk;
+        if (document.getElementById('admin-stat-terlambat')) document.getElementById('admin-stat-terlambat').innerText = totalTerlambatAdmin;
+        if (document.getElementById('admin-stat-off')) document.getElementById('admin-stat-off').innerText = totalOff;
+        if (document.getElementById('admin-stat-ps')) document.getElementById('admin-stat-ps').innerText = totalPs;
+    }
 }
 
 function retrackGPS() {
@@ -1021,10 +1214,8 @@ function prosesAbsen() {
 
             let infoDurasi = "";
 
-           if (tipeAbsen === 'Check In') {
+            if (tipeAbsen === 'Check In') {
                 localStorage.setItem(`waktuCheckIn_${namaLogin}`, waktuMilidetikSekarang);
-                
-                // Real-time update di web: Jika absen masuk dilakukan pada pukul 08:01 ke atas
                 if (jamSekarang > 8 || (jamSekarang === 8 && serverDate.getMinutes() > 0)) {
                     totalTerlambat++;
                     localStorage.setItem(`totalTerlambat_${namaLogin}`, totalTerlambat);
@@ -1037,7 +1228,6 @@ function prosesAbsen() {
                     const totalMenit = Math.floor(selisihMilidetik / (1000 * 60));
                     const jam = Math.floor(totalMenit / 60);
                     const menit = totalMenit % 60;
-                    
                     infoDurasi = `<br><br>⏱️ <strong>Durasi Kerja Anda Hari Ini:</strong><br>${jam} Jam ${menit} Menit.`;
                 }
 
