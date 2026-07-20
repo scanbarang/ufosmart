@@ -36,7 +36,7 @@
             box-sizing: border-box;
         }
 
-     .box { 
+    .box { 
             width: 100%;
             max-width: 380px; 
             background: var(--card-bg); 
@@ -44,9 +44,22 @@
             border-radius: 16px; 
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.04);
             box-sizing: border-box;
-            border: 2px solid rgba(0, 0, 0, 0.25); /* Garis dipertebal 2px dengan warna hitam halus yang lebih jelas */
+            border: 2px solid rgba(0, 0, 0, 0.25);
             text-align: center;
             transition: transform 0.2s ease;
+        }
+
+        /* Kotak-kotak di dalam dashboard (Periode, Statistik, Status Log) */
+        #periode-karyawan-text, 
+        .stat-box, 
+        #status-log {
+            border: 1.5px solid rgba(0, 0, 0, 0.2) !important;
+        }
+
+        /* Kotak Filter dan Tabel di Admin */
+        .box-admin div[style*="background: #f8fafc"], 
+        .table-container {
+            border: 1.5px solid rgba(0, 0, 0, 0.2) !important;
         }
         .box-admin { 
             max-width: 1000px; 
