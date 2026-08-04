@@ -410,6 +410,23 @@
             background: var(--primary-hover);
         }
 
+        /* Warna Tombol Dinamis Peta */
+        .btn-theme-in {
+            background: #1d4ed8 !important;
+            box-shadow: 0 4px 14px rgba(29, 78, 216, 0.35) !important;
+        }
+        .btn-theme-in:hover {
+            background: #1e40af !important;
+        }
+
+        .btn-theme-out {
+            background: #d97706 !important;
+            box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35) !important;
+        }
+        .btn-theme-out:hover {
+            background: #b45309 !important;
+        }
+
         .btn-absen-kirim { 
             background: var(--primary); 
             color: white;
@@ -660,7 +677,7 @@
 
     <div id="fullscreen-map"></div>
     <button class="btn-primary" id="btn-lanjut-kamera" onclick="lanjutKeKamera()" style="margin-top: 10px;">
-        LANJUT KE KAMERA & ABSEN
+        CHECK IN
     </button>
 </div>
 
@@ -770,7 +787,7 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyzWGgEbgvoYjjrIUddH
 
 const TOKO_LAT = -8.020496288923635;
 const TOKO_LNG = 112.61885029434528;
-const RADIUS_MAKSIMAL = 50; // Radius dipersempit jadi 50 meter
+const RADIUS_MAKSIMAL = 50; // Radius 50 meter
 
 let streamKamera = null;
 let lat = 0, lng = 0, namaLogin = "", tipeAbsen = "";
@@ -793,6 +810,17 @@ function bukaPetaFullscreen(tipe) {
     document.getElementById('view-dashboard').style.display = 'none';
     document.getElementById('view-map-fullscreen').style.display = 'flex';
     document.getElementById('judul-map-fullscreen').innerText = "Konfirmasi " + tipe;
+    
+    const btnLanjut = document.getElementById('btn-lanjut-kamera');
+    if (btnLanjut) {
+        btnLanjut.innerText = tipe.toUpperCase();
+        btnLanjut.classList.remove('btn-theme-in', 'btn-theme-out');
+        if (tipe === 'Check In') {
+            btnLanjut.classList.add('btn-theme-in');
+        } else {
+            btnLanjut.classList.add('btn-theme-out');
+        }
+    }
 
     setTimeout(() => {
         if (!fsMapInstance) {
@@ -1473,7 +1501,6 @@ function cekValidasiHarian() {
     }
 
     if (sudahCheckIn && !sudahCheckOut) {
-        // SUDAH CHECK IN: Check In & OFF mati, Check Out aktif
         btnCheckIn.disabled = true; btnCheckIn.classList.add('btn-disabled');
         btnOff.disabled = true; btnOff.classList.add('btn-disabled');
         btnCheckOut.disabled = false; btnCheckOut.classList.remove('btn-disabled');
@@ -1482,7 +1509,6 @@ function cekValidasiHarian() {
     }
 
     if (!sudahCheckIn && !sudahOff) {
-        // BELUM ABSEN: Check In & OFF aktif, Check Out mati
         btnCheckIn.disabled = false; btnCheckIn.classList.remove('btn-disabled');
         btnOff.disabled = false; btnOff.classList.remove('btn-disabled');
         btnCheckOut.disabled = true; btnCheckOut.classList.add('btn-disabled');
