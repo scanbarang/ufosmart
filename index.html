@@ -604,7 +604,7 @@
         </div>
     </div>
 
-    <div id="status-log">⏳ Data siap. Silakan lakukan Check In atau Check Out saat berada di area toko.</div>
+    <div id="status-log">⏳ Sinkronisasi data absensi...</div>
  
     <!-- KARTU ABSENSI -->
     <div class="btn-grid">
@@ -770,7 +770,7 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyzWGgEbgvoYjjrIUddH
 
 const TOKO_LAT = -8.020496288923635;
 const TOKO_LNG = 112.61885029434528;
-const RADIUS_MAKSIMAL = 50; // Diubah jadi 50 meter sesuai kebutuhan radius sempit
+const RADIUS_MAKSIMAL = 50; // Radius dipersempit jadi 50 meter
 
 let streamKamera = null;
 let lat = 0, lng = 0, namaLogin = "", tipeAbsen = "";
@@ -815,7 +815,6 @@ function bukaPetaFullscreen(tipe) {
             fsMapInstance.invalidateSize();
         }
 
-        // Mulai aktifkan GPS persis saat peta dibuka
         startGPS();
     }, 300);
 }
@@ -1473,11 +1472,22 @@ function cekValidasiHarian() {
         return;
     }
 
-    // Tombol selalu aktif dibuka (karena validasi jarak sekarang dilakukan di dalam peta fullscreen)
-    btnCheckIn.disabled = false; btnCheckIn.classList.remove('btn-disabled');
-    btnCheckOut.disabled = false; btnCheckOut.classList.remove('btn-disabled');
-    btnOff.disabled = false; btnOff.classList.remove('btn-disabled');
-    document.getElementById('status-log').innerHTML = "🟢 Sistem siap. Klik <b>Check In</b> atau <b>Check Out</b> untuk verifikasi lokasi.";
+    if (sudahCheckIn && !sudahCheckOut) {
+        // SUDAH CHECK IN: Check In & OFF mati, Check Out aktif
+        btnCheckIn.disabled = true; btnCheckIn.classList.add('btn-disabled');
+        btnOff.disabled = true; btnOff.classList.add('btn-disabled');
+        btnCheckOut.disabled = false; btnCheckOut.classList.remove('btn-disabled');
+        document.getElementById('status-log').innerHTML = "Status : Sedang bekerja<br>Klik <b>Check Out</b> saat jam pulang.";
+        return;
+    }
+
+    if (!sudahCheckIn && !sudahOff) {
+        // BELUM ABSEN: Check In & OFF aktif, Check Out mati
+        btnCheckIn.disabled = false; btnCheckIn.classList.remove('btn-disabled');
+        btnOff.disabled = false; btnOff.classList.remove('btn-disabled');
+        btnCheckOut.disabled = true; btnCheckOut.classList.add('btn-disabled');
+        document.getElementById('status-log').innerHTML = "🟢 Silakan klik <b>Check In</b> atau ambil <b>OFF</b>.";
+    }
 }
 
 function jalankanKamera() {
