@@ -132,7 +132,6 @@
             text-transform: capitalize;
         }
 
-        /* Information & Stats Cards */
         #periode-karyawan-text {
             background: #ffffff !important;
             border: 1px solid var(--border-color) !important;
@@ -170,27 +169,49 @@
             color: var(--text-main);
         }
 
-        /* GPS Status Log & Map Container */
         #status-log {
             font-size: 12px !important;
             color: var(--text-main) !important;
             background: #f8fafc !important;
             border: 1px dashed #cbd5e1 !important;
-            padding: 10px !important;
+            padding: 12px !important;
             border-radius: var(--radius-md) !important;
-            margin-bottom: 10px !important;
+            margin-bottom: 16px !important;
             font-weight: 600 !important;
             text-align: center !important;
-            line-height: 1.4 !important;
+            line-height: 1.5 !important;
         }
 
-        #map {
+        /* MAP FULLSCREEN VIEW */
+        #view-map-fullscreen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffffff;
+            z-index: 999;
+            flex-direction: column;
+            padding: 16px;
+        }
+
+        .map-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .map-header h3 {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        #fullscreen-map {
             width: 100%;
-            height: 200px;
+            flex-grow: 1;
             border-radius: var(--radius-md);
             border: 1px solid var(--border-color);
-            margin-bottom: 14px;
-            z-index: 1;
+            margin-bottom: 12px;
         }
 
         /* Modern Form Inputs */
@@ -228,7 +249,6 @@
             box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
         }
 
-        /* DESAIN BOX ABSENSI */
         .btn-grid {
             display: flex;
             flex-direction: column;
@@ -279,7 +299,6 @@
             stroke-linejoin: round;
         }
 
-        /* TOMBOL CHECK-IN (BIRU MENYALA) */
         .card-in {
             background: #1d4ed8 !important;
             border: 1px solid #1e40af !important;
@@ -289,7 +308,6 @@
         .card-in .absen-title { color: #ffffff !important; }
         .card-in .info-jam-absen { color: #1d4ed8 !important; font-weight: 800 !important; }
 
-        /* TOMBOL CHECK-OUT (KUNING/ORANGE MENYALA) */
         .card-out {
             background: #eab308 !important;
             border: 1px solid #ca8a04 !important;
@@ -299,7 +317,6 @@
         .card-out .absen-title { color: #713f12 !important; }
         .card-out .info-jam-absen { color: #c2410c !important; font-weight: 800 !important; }
 
-        /* TOMBOL OFF/LIBUR (BACKGROUND MERAH MENYALA, TEKS PUTIH) */
         .card-off-wrapper {
             width: 100%;
             display: flex;
@@ -340,7 +357,6 @@
             width: 100%;
         }
 
-        /* General Buttons */
         button { 
             width: 100%; 
             padding: 14px; 
@@ -379,7 +395,6 @@
             box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
         }
 
-        /* TOMBOL KELUAR DARI SISTEM (HIJAU MENYALA) */
         .btn-logout { 
             background: #059669 !important; 
             color: #ffffff !important; 
@@ -404,7 +419,6 @@
             box-shadow: none;
         }
 
-        /* Camera View */
         #kamera { 
             width: 100%; 
             aspect-ratio: 3 / 4;
@@ -415,7 +429,6 @@
             max-height: 380px;
         }
 
-        /* Table & Admin View */
         .table-container {
             width: 100%;
             overflow-x: auto;
@@ -570,9 +583,6 @@
 
     <div id="status-log">⏳ Memuat data absensi dari server...</div>
 
-    <!-- ELEMEN PETA INTERAKTIF -->
-    <div id="map"></div>
-
     <button id="btn-refresh-gps" onclick="retrackGPS()" style="margin-bottom: 16px; padding: 8px 14px; font-size: 11px; background: #f1f5f9; color: var(--text-muted); width: auto; display: inline-flex; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: none;">
         🔄 Refresh Lokasi GPS
     </button>
@@ -580,7 +590,7 @@
     <!-- KARTU ABSENSI -->
     <div class="btn-grid">
         <div class="absen-card-group">
-            <button class="absen-card card-in" id="btn-checkin" onclick="pilihAksi('Check In')">
+            <button class="absen-card card-in" id="btn-checkin" onclick="bukaPetaFullscreen('Check In')">
                 <div class="absen-icon">
                     <svg viewBox="0 0 24 24"><path d="M15 15l-3 3m0 0l-3-3m3 3V10M4 17v1a3 3 0 003 3h10a3 3 0 003-3v-1M4 7v-1a3 3 0 013-3h10a3 3 0 013 3v1"/></svg>
                 </div>
@@ -588,7 +598,7 @@
                 <span id="time-checkin" class="info-jam-absen">--:--</span>
             </button>
 
-            <button class="absen-card card-out" id="btn-checkout" onclick="pilihAksi('Check Out')">
+            <button class="absen-card card-out" id="btn-checkout" onclick="bukaPetaFullscreen('Check Out')">
                 <div class="absen-icon">
                     <svg viewBox="0 0 24 24"><path d="M9 11l3-3m0 0l3 3m-3-3v8M4 17v1a3 3 0 003 3h10a3 3 0 003-3v-1M4 7v-1a3 3 0 013-3h10a3 3 0 013 3v1"/></svg>
                 </div>
@@ -610,6 +620,22 @@
     </div>
 
     <button class="btn-logout" onclick="logout()">KELUAR DARI SISTEM</button>
+</div>
+
+<!-- VIEW MAP FULLSCREEN (MUNCUL SATU LAYAR KETIKA KLIK CHECK-IN / CHECK-OUT) -->
+<div id="view-map-fullscreen">
+    <div class="map-header">
+        <button onclick="tutupPetaFullscreen()" style="width: auto; padding: 8px 12px; background: #f1f5f9; color: var(--text-muted); border-radius: 8px; box-shadow: none;">← Kembali</button>
+        <h3 id="judul-map-fullscreen">Verifikasi Lokasi</h3>
+        <div style="width: 60px;"></div>
+    </div>
+    <div style="background: var(--primary-light); color: var(--primary); padding: 10px; border-radius: var(--radius-md); font-size: 12px; font-weight: 700; margin-bottom: 10px; text-align: center;" id="info-jarak-peta">
+        Memeriksa jarak dari lokasi toko...
+    </div>
+    <div id="fullscreen-map"></div>
+    <button class="btn-primary" id="btn-lanjut-kamera" onclick="lanjutKeKamera()" style="margin-top: 10px;">
+        LANJUT KE KAMERA & ABSEN
+    </button>
 </div>
 
 <!-- VIEW KAMERA -->
@@ -711,7 +737,6 @@
 </div> 
 
 <!-- Leaflet JS untuk Peta -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
 <script>
@@ -732,46 +757,94 @@ let dataLaporanGlobal = [];
 let isDataLoaded = false; 
 let isEksekusiOffRunning = false;
 
-let mapInstance = null;
-let markerToko = null;
-let markerUser = null;
-let circleRadius = null;
+let fsMapInstance = null;
+let fsMarkerToko = null;
+let fsMarkerUser = null;
+let fsCircleRadius = null;
 
-function initMap() {
-    if (!mapInstance) {
-        mapInstance = L.map('map').setView([TOKO_LAT, TOKO_LNG], 17);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '© OpenStreetMap'
-        }).addTo(mapInstance);
+function bukaPetaFullscreen(tipe) {
+    tipeAbsen = tipe;
+    document.getElementById('view-dashboard').style.display = 'none';
+    document.getElementById('view-map-fullscreen').style.display = 'flex';
+    document.getElementById('judul-map-fullscreen').innerText = "Konfirmasi " + tipe;
 
-        markerToko = L.marker([TOKO_LAT, TOKO_LNG]).addTo(mapInstance)
-            .bindPopup("<b>UFO Kebonsari</b><br>Lokasi Toko").openPopup();
+    setTimeout(() => {
+        if (!fsMapInstance) {
+            fsMapInstance = L.map('fullscreen-map').setView([TOKO_LAT, TOKO_LNG], 17);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(fsMapInstance);
 
-        circleRadius = L.circle([TOKO_LAT, TOKO_LNG], {
-            color: 'red',
-            fillColor: '#f03',
-            fillOpacity: 0.2,
-            radius: RADIUS_MAKSIMAL
-        }).addTo(mapInstance);
+            fsMarkerToko = L.marker([TOKO_LAT, TOKO_LNG]).addTo(fsMapInstance)
+                .bindPopup("<b>UFO Kebonsari</b><br>Lokasi Toko").openPopup();
+
+            fsCircleRadius = L.circle([TOKO_LAT, TOKO_LNG], {
+                color: 'red',
+                fillColor: '#f03',
+                fillOpacity: 0.2,
+                radius: RADIUS_MAKSIMAL
+            }).addTo(fsMapInstance);
+        } else {
+            fsMapInstance.invalidateSize();
+        }
+
+        updateFullscreenMapPosition(lat || TOKO_LAT, lng || TOKO_LNG);
+    }, 300);
+}
+
+function updateFullscreenMapPosition(userLat, userLng) {
+    if (!fsMapInstance) return;
+
+    if (!fsMarkerUser) {
+        fsMarkerUser = L.marker([userLat, userLng], {
+            icon: L.divIcon({
+                className: 'user-marker',
+                html: '<div style="background: #2563eb; width: 16px; height: 16px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.5);"></div>'
+            })
+        }).addTo(fsMapInstance).bindPopup("Lokasi Anda Saat Ini");
+    } else {
+        fsMarkerUser.setLatLng([userLat, userLng]);
+    }
+    
+    fsMapInstance.setView([userLat, userLng], 17);
+
+    var jarak = Math.round(hitungJarak(userLat, userLng, TOKO_LAT, TOKO_LNG));
+    const infoJarak = document.getElementById('info-jarak-peta');
+    const btnLanjut = document.getElementById('btn-lanjut-kamera');
+
+    if (jarak <= RADIUS_MAKSIMAL) {
+        isGpsValid = true;
+        infoJarak.style.background = "#dcfce7";
+        infoJarak.style.color = "#15803d";
+        infoJarak.innerHTML = `✅ Anda berada dalam radius pekerjaan (${jarak}m dari toko)`;
+        btnLanjut.disabled = false;
+        btnLanjut.classList.remove('btn-disabled');
+    } else {
+        isGpsValid = false;
+        infoJarak.style.background = "#fee2e2";
+        infoJarak.style.color = "#b91c1c";
+        infoJarak.innerHTML = `❌ Diluar Area (+${jarak}m dari toko). Mendekatlah untuk Absen!`;
+        btnLanjut.disabled = true;
+        btnLanjut.classList.add('btn-disabled');
     }
 }
 
-function updateMapPosition(userLat, userLng) {
-    if (!mapInstance) return;
+function tutupPetaFullscreen() {
+    document.getElementById('view-map-fullscreen').style.display = 'none';
+    document.getElementById('view-dashboard').style.display = 'block';
+    cekValidasiHarian();
+}
 
-    if (!markerUser) {
-        markerUser = L.marker([userLat, userLng], {
-            icon: L.divIcon({
-                className: 'user-marker',
-                html: '<div style="background: #2563eb; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>'
-            })
-        }).addTo(mapInstance).bindPopup("Lokasi Anda Saat Ini");
-    } else {
-        markerUser.setLatLng([userLat, userLng]);
+function lanjutKeKamera() {
+    if (!isGpsValid) {
+        tampilkanPesan("Anda masih di luar radius toko, tidak bisa melanjutkan.", "info");
+        return;
     }
-    
-    mapInstance.setView([userLat, userLng], 17);
+    document.getElementById('view-map-fullscreen').style.display = 'none';
+    document.getElementById('view-kamera').style.display = 'block';
+    document.getElementById('judul-kamera').innerText = "Kamera " + tipeAbsen;
+    jalankanKamera();
 }
 
 function initPeriodeKaryawan() {
@@ -938,11 +1011,6 @@ function prosesLogin() {
                 isDataLoaded = false;
                 kunciTombolKerja(true);
                 document.getElementById('status-log').innerHTML = "⏳ Menghubungkan & sinkronisasi data dari server...";
-
-                setTimeout(() => {
-                    initMap();
-                    mapInstance.invalidateSize();
-                }, 300);
 
                 sinkronisasiFullServer();
                 sinkronisasiWaktuServer();
@@ -1306,8 +1374,9 @@ function startGPS() {
                     isGpsValid = false;
                 }
 
-                // Update posisi pin di peta
-                updateMapPosition(lat, lng);
+                if (document.getElementById('view-map-fullscreen').style.display === 'flex') {
+                    updateFullscreenMapPosition(lat, lng);
+                }
                 
                 cekValidasiHarian();
             },
@@ -1411,14 +1480,6 @@ function cekValidasiHarian() {
     }
 }
 
-function pilihAksi(tipe) {
-    tipeAbsen = tipe;
-    document.getElementById('view-dashboard').style.display = 'none';
-    document.getElementById('view-kamera').style.display = 'block';
-    document.getElementById('judul-kamera').innerText = "Kamera " + tipe;
-    jalankanKamera();
-}
-
 function jalankanKamera() {
     if(streamKamera) {
         streamKamera.getTracks().forEach(track => track.stop());
@@ -1453,7 +1514,6 @@ function kembaliKeDashboard() {
     if(streamKamera) streamKamera.getTracks().forEach(track => track.stop());
     document.getElementById('view-kamera').style.display = 'none';
     document.getElementById('view-dashboard').style.display = 'block';
-    setTimeout(() => { if(mapInstance) mapInstance.invalidateSize(); }, 200);
     cekValidasiHarian();
 }
 
