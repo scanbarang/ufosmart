@@ -12,6 +12,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+    <!-- Leaflet CSS untuk Peta -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
     <style>
         :root {
             --primary: #2563eb;
@@ -167,18 +170,27 @@
             color: var(--text-main);
         }
 
-        /* GPS Status Log */
+        /* GPS Status Log & Map Container */
         #status-log {
             font-size: 12px !important;
             color: var(--text-main) !important;
             background: #f8fafc !important;
             border: 1px dashed #cbd5e1 !important;
-            padding: 12px !important;
+            padding: 10px !important;
             border-radius: var(--radius-md) !important;
-            margin-bottom: 12px !important;
+            margin-bottom: 10px !important;
             font-weight: 600 !important;
             text-align: center !important;
-            line-height: 1.5 !important;
+            line-height: 1.4 !important;
+        }
+
+        #map {
+            width: 100%;
+            height: 200px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            margin-bottom: 14px;
+            z-index: 1;
         }
 
         /* Modern Form Inputs */
@@ -442,7 +454,6 @@
             text-decoration: none;
         }
 
-        /* SPINNER LEBIH JELAS & TEBAL */
         .spinner {
             border: 3px solid rgba(255, 255, 255, 0.4);
             border-radius: 50%;
@@ -458,7 +469,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Modal Overlay */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(15, 23, 42, 0.6); 
@@ -473,7 +483,6 @@
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         }
 
-        /* Styling Tombol Disabled (Abu-abu) untuk SEMUA tombol termasuk OFF */
         .btn-disabled {
             background-color: #e2e8f0 !important;
             border-color: #cbd5e1 !important;
@@ -561,6 +570,9 @@
 
     <div id="status-log">⏳ Memuat data absensi dari server...</div>
 
+    <!-- ELEMEN PETA INTERAKTIF -->
+    <div id="map"></div>
+
     <button id="btn-refresh-gps" onclick="retrackGPS()" style="margin-bottom: 16px; padding: 8px 14px; font-size: 11px; background: #f1f5f9; color: var(--text-muted); width: auto; display: inline-flex; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: none;">
         🔄 Refresh Lokasi GPS
     </button>
@@ -568,7 +580,6 @@
     <!-- KARTU ABSENSI -->
     <div class="btn-grid">
         <div class="absen-card-group">
-            <!-- CHECK IN (BIRU MENYALA) -->
             <button class="absen-card card-in" id="btn-checkin" onclick="pilihAksi('Check In')">
                 <div class="absen-icon">
                     <svg viewBox="0 0 24 24"><path d="M15 15l-3 3m0 0l-3-3m3 3V10M4 17v1a3 3 0 003 3h10a3 3 0 003-3v-1M4 7v-1a3 3 0 013-3h10a3 3 0 013 3v1"/></svg>
@@ -577,7 +588,6 @@
                 <span id="time-checkin" class="info-jam-absen">--:--</span>
             </button>
 
-            <!-- CHECK OUT (KUNING MENYALA) -->
             <button class="absen-card card-out" id="btn-checkout" onclick="pilihAksi('Check Out')">
                 <div class="absen-icon">
                     <svg viewBox="0 0 24 24"><path d="M9 11l3-3m0 0l3 3m-3-3v8M4 17v1a3 3 0 003 3h10a3 3 0 003-3v-1M4 7v-1a3 3 0 013-3h10a3 3 0 013 3v1"/></svg>
@@ -587,7 +597,6 @@
             </button>
         </div>
 
-        <!-- TOMBOL OFF/LIBUR (BACKGROUND MERAH MENYALA, TEKS PUTIH) -->
         <div class="card-off-wrapper">
             <button class="absen-card card-off" id="btn-off" onclick="prosesAbsenOff()">
                 <div class="absen-icon">
@@ -600,7 +609,6 @@
         </div>
     </div>
 
-    <!-- TOMBOL KELUAR DARI SISTEM (HIJAU MENYALA) -->
     <button class="btn-logout" onclick="logout()">KELUAR DARI SISTEM</button>
 </div>
 
@@ -702,6 +710,10 @@
     </div>
 </div> 
 
+<!-- Leaflet JS untuk Peta -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyzWGgEbgvoYjjrIUddHxb-QXKy0QyoHXrozQJ2951XSKK4F13-d2VvW25MEs0cfKqpnA/exec";
 
@@ -719,6 +731,48 @@ let serverTimeOffset = 0;
 let dataLaporanGlobal = [];
 let isDataLoaded = false; 
 let isEksekusiOffRunning = false;
+
+let mapInstance = null;
+let markerToko = null;
+let markerUser = null;
+let circleRadius = null;
+
+function initMap() {
+    if (!mapInstance) {
+        mapInstance = L.map('map').setView([TOKO_LAT, TOKO_LNG], 17);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(mapInstance);
+
+        markerToko = L.marker([TOKO_LAT, TOKO_LNG]).addTo(mapInstance)
+            .bindPopup("<b>UFO Kebonsari</b><br>Lokasi Toko").openPopup();
+
+        circleRadius = L.circle([TOKO_LAT, TOKO_LNG], {
+            color: 'red',
+            fillColor: '#f03',
+            fillOpacity: 0.2,
+            radius: RADIUS_MAKSIMAL
+        }).addTo(mapInstance);
+    }
+}
+
+function updateMapPosition(userLat, userLng) {
+    if (!mapInstance) return;
+
+    if (!markerUser) {
+        markerUser = L.marker([userLat, userLng], {
+            icon: L.divIcon({
+                className: 'user-marker',
+                html: '<div style="background: #2563eb; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>'
+            })
+        }).addTo(mapInstance).bindPopup("Lokasi Anda Saat Ini");
+    } else {
+        markerUser.setLatLng([userLat, userLng]);
+    }
+    
+    mapInstance.setView([userLat, userLng], 17);
+}
 
 function initPeriodeKaryawan() {
     const labelPeriodeKaryawan = document.getElementById('periode-karyawan-text');
@@ -884,6 +938,11 @@ function prosesLogin() {
                 isDataLoaded = false;
                 kunciTombolKerja(true);
                 document.getElementById('status-log').innerHTML = "⏳ Menghubungkan & sinkronisasi data dari server...";
+
+                setTimeout(() => {
+                    initMap();
+                    mapInstance.invalidateSize();
+                }, 300);
 
                 sinkronisasiFullServer();
                 sinkronisasiWaktuServer();
@@ -1246,6 +1305,9 @@ function startGPS() {
                 } else {
                     isGpsValid = false;
                 }
+
+                // Update posisi pin di peta
+                updateMapPosition(lat, lng);
                 
                 cekValidasiHarian();
             },
@@ -1391,6 +1453,7 @@ function kembaliKeDashboard() {
     if(streamKamera) streamKamera.getTracks().forEach(track => track.stop());
     document.getElementById('view-kamera').style.display = 'none';
     document.getElementById('view-dashboard').style.display = 'block';
+    setTimeout(() => { if(mapInstance) mapInstance.invalidateSize(); }, 200);
     cekValidasiHarian();
 }
 
