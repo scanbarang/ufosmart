@@ -1402,6 +1402,11 @@ function startGPS() {
     isGpsValid = false;
 
     if (navigator.geolocation) {
+        // Hentikan watcher lama jika ada
+        if (gpsWatcher) {
+            navigator.geolocation.clearWatch(gpsWatcher);
+        }
+
         gpsWatcher = navigator.geolocation.watchPosition(
             (position) => {
                 lat = position.coords.latitude;
@@ -1414,6 +1419,7 @@ function startGPS() {
                     isGpsValid = false;
                 }
 
+                // Perbarui posisi titik biru secara real-time di peta fullscreen
                 if (document.getElementById('view-map-fullscreen').style.display === 'flex') {
                     updateFullscreenMapPosition(lat, lng);
                 }
@@ -1422,10 +1428,14 @@ function startGPS() {
             },
             (error) => {
                 isGpsValid = false;
-                document.getElementById('status-log').innerText = "⚠️ Gagal membaca lokasi GPS. Aktifkan Izin Lokasi di HP!";
+                document.getElementById('status-log').innerText = "⚠️ Gagal membaca lokasi GPS. Pastikan GPS aktif dan izin lokasi diberikan!";
                 cekValidasiHarian();
             },
-            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            { 
+                enableHighAccuracy: true, // Memaksa HP menggunakan GPS akurasi tinggi (bukan Wi-Fi/BTS doang)
+                timeout: 15000, 
+                maximumAge: 0 // Memaksa mengambil data posisi terbaru (tidak pakai data cache lama)
+            }
         );
     } else {
         tampilkanPesan("Browser kamu tidak mendukung GPS.", "info");
