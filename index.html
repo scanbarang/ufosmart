@@ -206,12 +206,35 @@
             color: var(--text-main);
         }
 
+        /* Kotak Informasi Radius Modern (Floating Banner di atas Peta) */
+        #info-jarak-peta {
+            position: absolute;
+            top: 75px;
+            left: 24px;
+            right: 24px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 700;
+            text-align: left;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+
         #fullscreen-map {
             width: 100%;
             flex-grow: 1;
             border-radius: var(--radius-md);
             border: 1px solid var(--border-color);
             margin-bottom: 12px;
+            position: relative;
         }
 
         /* Modern Form Inputs */
@@ -629,9 +652,16 @@
         <h3 id="judul-map-fullscreen">Verifikasi Lokasi</h3>
         <div style="width: 60px;"></div>
     </div>
-    <div style="background: var(--primary-light); color: var(--primary); padding: 10px; border-radius: var(--radius-md); font-size: 12px; font-weight: 700; margin-bottom: 10px; text-align: center;" id="info-jarak-peta">
-        Memeriksa jarak dari lokasi toko...
+    
+    <!-- Floating Banner Informasi Radius Modern -->
+    <div id="info-jarak-peta">
+        <div style="background: #e2e8f0; color: #64748b; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px;">⏳</div>
+        <div>
+            <div style="color: var(--text-main); font-size: 13px; font-weight: 800;">Memeriksa lokasi GPS...</div>
+            <div style="color: var(--text-muted); font-size: 11px; font-weight: 600; margin-top: 2px;">Menghitung jarak ke titik toko.</div>
+        </div>
     </div>
+
     <div id="fullscreen-map"></div>
     <button class="btn-primary" id="btn-lanjut-kamera" onclick="lanjutKeKamera()" style="margin-top: 10px;">
         LANJUT KE KAMERA & ABSEN
@@ -815,16 +845,26 @@ function updateFullscreenMapPosition(userLat, userLng) {
 
     if (jarak <= RADIUS_MAKSIMAL) {
         isGpsValid = true;
-        infoJarak.style.background = "#dcfce7";
-        infoJarak.style.color = "#15803d";
-        infoJarak.innerHTML = `✅ Anda berada dalam radius pekerjaan (${jarak}m dari toko)`;
+        infoJarak.style.borderColor = "#10b981";
+        infoJarak.innerHTML = `
+            <div style="background: #dcfce7; color: #15803d; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px;">✓</div>
+            <div>
+                <div style="color: #15803d; font-size: 13px; font-weight: 800;">Anda berada dalam radius pekerjaan</div>
+                <div style="color: var(--text-muted); font-size: 11px; font-weight: 600; margin-top: 2px;">Jarak ${jarak} meter dari titik toko.</div>
+            </div>
+        `;
         btnLanjut.disabled = false;
         btnLanjut.classList.remove('btn-disabled');
     } else {
         isGpsValid = false;
-        infoJarak.style.background = "#fee2e2";
-        infoJarak.style.color = "#b91c1c";
-        infoJarak.innerHTML = `❌ Diluar Area (+${jarak}m dari toko). Mendekatlah untuk Absen!`;
+        infoJarak.style.borderColor = "#ef4444";
+        infoJarak.innerHTML = `
+            <div style="background: #fee2e2; color: #b91c1c; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px;">✕</div>
+            <div>
+                <div style="color: #b91c1c; font-size: 13px; font-weight: 800;">Di luar area pekerjaan</div>
+                <div style="color: var(--text-muted); font-size: 11px; font-weight: 600; margin-top: 2px;">Terlalu jauh (+${jarak}m). Mendekatlah!</div>
+            </div>
+        `;
         btnLanjut.disabled = true;
         btnLanjut.classList.add('btn-disabled');
     }
