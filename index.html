@@ -604,11 +604,7 @@
         </div>
     </div>
 
-    <div id="status-log">⏳ Memuat data absensi dari server...</div>
-
-    <button id="btn-refresh-gps" onclick="retrackGPS()" style="margin-bottom: 16px; padding: 8px 14px; font-size: 11px; background: #f1f5f9; color: var(--text-muted); width: auto; display: inline-flex; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: none;">
-        🔄 Refresh Lokasi GPS
-    </button>
+    <div id="status-log">⏳ Data siap. Silakan lakukan Check In atau Check Out saat berada di area toko.</div>
  
     <!-- KARTU ABSENSI -->
     <div class="btn-grid">
@@ -772,9 +768,9 @@
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyzWGgEbgvoYjjrIUddHxb-QXKy0QyoHXrozQJ2951XSKK4F13-d2VvW25MEs0cfKqpnA/exec";
 
-const TOKO_LAT = -8.021187;
-const TOKO_LNG = 112.618698;
-const RADIUS_MAKSIMAL = 30;
+const TOKO_LAT = -8.020496288923635;
+const TOKO_LNG = 112.61885029434528;
+const RADIUS_MAKSIMAL = 50; // Diubah jadi 50 meter sesuai kebutuhan radius sempit
 
 let streamKamera = null;
 let lat = 0, lng = 0, namaLogin = "", tipeAbsen = "";
@@ -819,8 +815,54 @@ function bukaPetaFullscreen(tipe) {
             fsMapInstance.invalidateSize();
         }
 
-        updateFullscreenMapPosition(lat || TOKO_LAT, lng || TOKO_LNG);
+        // Mulai aktifkan GPS persis saat peta dibuka
+        startGPS();
     }, 300);
+}
+
+function startGPS() {
+    isGpsValid = false;
+
+    if (navigator.geolocation) {
+        if (gpsWatcher) {
+            navigator.geolocation.clearWatch(gpsWatcher);
+        }
+
+        gpsWatcher = navigator.geolocation.watchPosition(
+            (position) => {
+                lat = position.coords.latitude;
+                lng = position.coords.longitude;
+                 
+                var jarak = hitungJarak(lat, lng, TOKO_LAT, TOKO_LNG);
+                if (jarak <= RADIUS_MAKSIMAL) {
+                    isGpsValid = true;
+                } else {
+                    isGpsValid = false;
+                }
+
+                if (document.getElementById('view-map-fullscreen').style.display === 'flex') {
+                    updateFullscreenMapPosition(lat, lng);
+                }
+            },
+            (error) => {
+                isGpsValid = false;
+                const infoJarak = document.getElementById('info-jarak-peta');
+                if (infoJarak) {
+                    infoJarak.style.borderColor = "#ef4444";
+                    infoJarak.innerHTML = `
+                        <div style="background: #fee2e2; color: #b91c1c; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 16px;">✕</div>
+                        <div>
+                            <div style="color: #b91c1c; font-size: 13px; font-weight: 800;">GPS Gagal Dibaca</div>
+                            <div style="color: var(--text-muted); font-size: 11px; font-weight: 600; margin-top: 2px;">Aktifkan izin lokasi pada perangkat Anda.</div>
+                        </div>
+                    `;
+                }
+            },
+            { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+    } else {
+        tampilkanPesan("Browser kamu tidak mendukung GPS.", "info");
+    }
 }
 
 function updateFullscreenMapPosition(userLat, userLng) {
@@ -871,6 +913,10 @@ function updateFullscreenMapPosition(userLat, userLng) {
 }
 
 function tutupPetaFullscreen() {
+    if (gpsWatcher) {
+        navigator.geolocation.clearWatch(gpsWatcher);
+        gpsWatcher = null;
+    }
     document.getElementById('view-map-fullscreen').style.display = 'none';
     document.getElementById('view-dashboard').style.display = 'block';
     cekValidasiHarian();
@@ -880,6 +926,10 @@ function lanjutKeKamera() {
     if (!isGpsValid) {
         tampilkanPesan("Anda masih di luar radius toko, tidak bisa melanjutkan.", "info");
         return;
+    }
+    if (gpsWatcher) {
+        navigator.geolocation.clearWatch(gpsWatcher);
+        gpsWatcher = null;
     }
     document.getElementById('view-map-fullscreen').style.display = 'none';
     document.getElementById('view-kamera').style.display = 'block';
@@ -1083,7 +1133,6 @@ function sinkronisasiFullServer() {
 
         if (!data || data.length <= 1) {
             cekValidasiHarian();
-            startGPS();
             return;
         }
 
@@ -1174,13 +1223,11 @@ function sinkronisasiFullServer() {
         localStorage.setItem(`detailWaktu_${namaLogin}`, JSON.stringify(detailWaktuHariIni));
 
         cekValidasiHarian();
-        startGPS();
     })
     .catch(err => {
         console.error("Gagal sinkronisasi data dari server:", err);
         isDataLoaded = true;
         cekValidasiHarian();
-        startGPS();
     });
 }
 
@@ -1375,73 +1422,6 @@ function renderTabelAdmin(namaTarget) {
     }
 }
 
-function retrackGPS() {
-    const btnGps = document.getElementById('btn-refresh-gps');
-    if(btnGps) {
-        btnGps.disabled = true;
-        btnGps.innerText = "🔄 Memperbarui GPS...";
-    }
-
-    if (gpsWatcher) {
-        navigator.geolocation.clearWatch(gpsWatcher);
-        gpsWatcher = null;
-    }
-
-    document.getElementById('status-log').innerText = "Mendeteksi ulang koordinat...";
-    startGPS();
-
-    setTimeout(() => {
-        if(btnGps) {
-            btnGps.disabled = false;
-            btnGps.innerText = "🔄 Refresh Lokasi GPS";
-        }
-    }, 2000);
-}
-
-function startGPS() {
-    isGpsValid = false;
-
-    if (navigator.geolocation) {
-        // Hentikan watcher lama jika ada
-        if (gpsWatcher) {
-            navigator.geolocation.clearWatch(gpsWatcher);
-        }
-
-        gpsWatcher = navigator.geolocation.watchPosition(
-            (position) => {
-                lat = position.coords.latitude;
-                lng = position.coords.longitude;
-                 
-                var jarak = hitungJarak(lat, lng, TOKO_LAT, TOKO_LNG);
-                if (jarak <= RADIUS_MAKSIMAL) {
-                    isGpsValid = true;
-                } else {
-                    isGpsValid = false;
-                }
-
-                // Perbarui posisi titik biru secara real-time di peta fullscreen
-                if (document.getElementById('view-map-fullscreen').style.display === 'flex') {
-                    updateFullscreenMapPosition(lat, lng);
-                }
-                
-                cekValidasiHarian();
-            },
-            (error) => {
-                isGpsValid = false;
-                document.getElementById('status-log').innerText = "⚠️ Gagal membaca lokasi GPS. Pastikan GPS aktif dan izin lokasi diberikan!";
-                cekValidasiHarian();
-            },
-            { 
-                enableHighAccuracy: true, // Memaksa HP menggunakan GPS akurasi tinggi (bukan Wi-Fi/BTS doang)
-                timeout: 15000, 
-                maximumAge: 0 // Memaksa mengambil data posisi terbaru (tidak pakai data cache lama)
-            }
-        );
-    } else {
-        tampilkanPesan("Browser kamu tidak mendukung GPS.", "info");
-    }
-}
-
 function cekValidasiHarian() {
     tampilkanStatistik(); 
     
@@ -1493,41 +1473,11 @@ function cekValidasiHarian() {
         return;
     }
 
-    if (sudahCheckIn && !sudahCheckOut) {
-        btnCheckIn.disabled = true; btnCheckIn.classList.add('btn-disabled');
-        btnOff.disabled = true; btnOff.classList.add('btn-disabled');
-
-        if (isGpsValid) {
-            btnCheckOut.disabled = false; btnCheckOut.classList.remove('btn-disabled');
-            document.getElementById('status-log').innerHTML = "Status : Sedang bekerja<br>Silahkan Checkout saat pulang";
-        } else {
-            btnCheckOut.disabled = true; btnCheckOut.classList.add('btn-disabled');
-            var jarak = (lat && lng) ? Math.round(hitungJarak(lat, lng, TOKO_LAT, TOKO_LNG)) : 0;
-            document.getElementById('status-log').innerHTML = `🔴 Diluar Area (+${jarak}m dari toko).<br>Masuk area toko untuk Checkout!`;
-        }
-        return;
-    }
-
-    if (!sudahCheckIn && !sudahOff) {
-        btnOff.disabled = false; 
-        btnOff.classList.remove('btn-disabled');
-
-        if (isGpsValid) {
-            btnCheckIn.disabled = false; btnCheckIn.classList.remove('btn-disabled');
-            btnCheckOut.disabled = true; btnCheckOut.classList.add('btn-disabled');
-            document.getElementById('status-log').innerHTML = "🟢 GPS Terverifikasi: Silakan Check In atau OFF";
-        } else {
-            btnCheckIn.disabled = true; btnCheckIn.classList.add('btn-disabled');
-            btnCheckOut.disabled = true; btnCheckOut.classList.add('btn-disabled');
-
-            var jarak = (lat && lng) ? Math.round(hitungJarak(lat, lng, TOKO_LAT, TOKO_LNG)) : 0;
-            if (lat === 0 && lng === 0) {
-                document.getElementById('status-log').innerHTML = "⏳ Menghubungkan GPS...<br>Gunakan tombol OFF jika hari ini libur.";
-            } else {
-                document.getElementById('status-log').innerHTML = `🔴 Diluar Area (+${jarak}m dari toko).<br>Hanya tombol OFF yang aktif.`;
-            }
-        }
-    }
+    // Tombol selalu aktif dibuka (karena validasi jarak sekarang dilakukan di dalam peta fullscreen)
+    btnCheckIn.disabled = false; btnCheckIn.classList.remove('btn-disabled');
+    btnCheckOut.disabled = false; btnCheckOut.classList.remove('btn-disabled');
+    btnOff.disabled = false; btnOff.classList.remove('btn-disabled');
+    document.getElementById('status-log').innerHTML = "🟢 Sistem siap. Klik <b>Check In</b> atau <b>Check Out</b> untuk verifikasi lokasi.";
 }
 
 function jalankanKamera() {
@@ -1585,7 +1535,6 @@ function prosesAbsenOff() {
 
 function eksekusiAbsenOff() {
     tutupModal(); 
-    
     isEksekusiOffRunning = true;
 
     const btn = document.getElementById('btn-off');
